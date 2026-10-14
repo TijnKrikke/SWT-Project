@@ -22,7 +22,6 @@ def generate_answer(
     tokenizer: AutoTokenizer,
     model: AutoModelForCausalLM,
     device: torch.device,
-    conversation_summary: str | None = None,
 ) -> tuple[str, list[int], list[dict]]:
     """The model that generates the final output with or without conversational context.
 
@@ -32,15 +31,12 @@ def generate_answer(
         tokenizer (AutoTokenizer): The tokenizer used to tokenize the chunks for the model.
         model (AutoModelForCausalLM): The model used to generate the answers.
         device (torch.device): The device on which the model is stored.
-        conversation_summary (str | None, optional): A summary of the conversation history.
-            If it is not None, the summary will be supplied during generation. If it is None,
-            the model will generate an answer without any history. Defaults to None.
 
     Returns:
         tuple[str, list[int], list[dict]]: The generated answer, the used context chunk ids,
             the message used for generation.
     """
-    if BASELINE:
+    if BASELINE: # no RAG
         messages = [
             {
                 "role": "user",
@@ -61,10 +57,11 @@ def generate_answer(
         answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
         return answer, None, messages
 
+    # with RAG
     ctx_idxs = retriever.retrieve(question)
 
     if not ctx_idxs:
-        return "I don't know.", ctx_idxs, ""
+        raise ValueError("No context chunks found for the given question.")
 
     context_lines = []
     for i, idx in enumerate(ctx_idxs, start=1):
@@ -74,30 +71,17 @@ def generate_answer(
 
     context = "\n".join(context_lines)
 
-    # Will only trigger during interactive mode
-    if conversation_summary:
-        messages = [
-            {
-                "role": "user",
-                "content": (
-                    "Answer the question using the context and conversation history summary below in one sentence.\n\n"
-                    f"Summary:\n{conversation_summary}\n\n"
-                    f"Context:\n{context}\n\n"
-                    f"Question:\n{question}"
-                ),
-            }
-        ]
-    else:
-        messages = [
-            {
-                "role": "user",
-                "content": (
-                    "Answer the question using the context below in one sentence.\n\n"
-                    f"Context:\n{context}\n\n"
-                    f"Question:\n{question}"
-                ),
-            }
-        ]
+    # maybe make this in Dutch later (content)
+    messages = [
+        {
+            "role": "user",
+            "content": (
+                "Answer the question using the context below in one sentence.\n\n"
+                f"Context:\n{context}\n\n"
+                f"Question:\n{question}"
+            ),
+        }
+    ]
 
     inputs = tokenizer.apply_chat_template(messages, return_tensors="pt", add_generation_prompt=True).to(device)
 
@@ -112,7 +96,7 @@ def generate_answer(
     generated = outputs[0][inputs.shape[1] :]
     answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
 
-    cite_page = retriever.chunks[ctx_idxs[0]].page
+    cite_page = retriever.chunks[ctx_idxs[0]].page # probably redundant, maybe adapt, depends
     answer += f"[{cite_page}]"
 
     print("PROMPT:")

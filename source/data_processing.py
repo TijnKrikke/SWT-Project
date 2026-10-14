@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import faiss
-import fitz
 import numpy as np
 from config import STOPWORDS
 
@@ -58,67 +57,6 @@ def _clean_text(string: str) -> str:
     string = re.sub(r"\s+", " ", string).strip()
     return string
 
-
-def pdf_to_chunks(pdf_path: Path, chunk_words: int, overlap_words: int) -> List[Chunk]:
-    """Split a PDF into overlapping text chunks based on word count.
-
-    Args:
-        pdf_path (Path): The location where the pdf is located.
-        chunk_words (int): The number of tokens in each chunk.
-        overlap_words (int): The number of over lap tokens.
-
-    Raises:
-        FileNotFoundError: If the pdf is not located at the specified path.
-
-    Returns:
-        List[Chunk]: A list of chunks containing all the text of the pdf.
-    """
-    if not pdf_path.exists():
-        raise FileNotFoundError(f"PDF not found: {pdf_path}")
-
-    doc = fitz.open(str(pdf_path))
-    chunks = []
-    chunk_id = 0
-
-    for page_index in range(doc.page_count):
-        page = doc.load_page(page_index)
-
-        text = page.get_text("text") or ""
-        paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
-
-        current_words = []
-
-        for para in paragraphs:
-            para = _clean_text(para)
-            if not para:
-                continue
-
-            words = para.split()
-            if not words:
-                continue
-
-            # If adding this paragraph would exceed the chunk size,
-            # save the current chunk and start a new one
-            if len(current_words) + len(words) > chunk_words:
-                if current_words:
-                    chunks.append(Chunk(text=" ".join(current_words), page=page_index + 1, chunk_id=chunk_id))
-                    chunk_id += 1
-
-                # keep overlap words for the next chunk
-                if overlap_words > 0:
-                    current_words = current_words[-overlap_words:]
-                else:
-                    current_words = []
-
-            current_words.extend(words)
-
-        # add the last chunk of the page
-        if current_words:
-            chunks.append(Chunk(text=" ".join(current_words), page=page_index + 1, chunk_id=chunk_id))
-            chunk_id += 1
-
-    doc.close()
-    return chunks
 
 
 def bm25_tokenize(text: str) -> List[str]:
