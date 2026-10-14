@@ -3,8 +3,7 @@ numpy
 sentence-transformers
 transformers==4.57.3
 bert-score
-streamlit
-faiss-cpu
+chromadb
 sacrebleu
 torch
 rank-bm25

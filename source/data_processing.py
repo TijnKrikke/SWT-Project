@@ -9,9 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List
 
-import faiss
-import numpy as np
-from config import STOPWORDS
+import chromadb
+from config import PROJECT_ROOT, STOPWORDS
 
 
 @dataclass
@@ -72,34 +71,61 @@ def bm25_tokenize(text: str) -> List[str]:
     return [t for t in toks if t not in STOPWORDS]
 
 
-class DenseIndex:
-    """FAISS-based dense embedding index using inner product similarity."""
+class VectorStore:
+    """ChromaDB storage for chunk texts, embeddings, and metadata."""
 
-    def __init__(self, embeddings: np.ndarray) -> None:
-        """
-        Initialize dense index with embeddings.
+    def __init__(self, persist_dir: Path, collection_name: str):
+        self.client = chromadb.PersistentClient(path=str(persist_dir))
+        self.collection = self.client.get_or_create_collection(
+            name=collection_name,
+            embedding_function=None,
+            configuration={"hnsw": {"space": "ip"}} # needed for cosine distance
+        )
 
-        Args:
-            embeddings: Numpy array of shape (n_chunks, embedding_dim) containing the embeddings
-                of all tokens.
-        """
-        emb = embeddings.astype(np.float32)
-        dim = emb.shape[1]
-        self.index = faiss.IndexFlatIP(dim)
-        self.index.add(emb)
+    def add(self, ids: list[str], texts: list[str], embeddings: list[list[float]], metadatas: list[dict]):
+        self.collection.upsert(ids=ids, documents=texts, embeddings=embeddings, metadatas=metadatas)
 
-    def search(self, q_emb: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
-        """
-        Search for k nearest neighbors of a query embedding.
+    def query(self, embedding: list[float], k: int = 5, where: dict | None = None) -> dict:
+        return self.collection.query(query_embeddings=[embedding], n_results=k, where=where)
 
-        Args:
-            q_emb (np.ndarray): The embedding of the query.
-            k (int): The number of neighbors to retrieve.
+    def reset(self):
+        name = self.collection.name
+        self.client.delete_collection(name)
+        self.collection = self.client.get_or_create_collection(
+            name=name,
+            embedding_function=None,
+            configuration={"hnsw": {"space": "ip"}},
+        )
 
-        Returns:
-            tuple[np.ndarray, np.ndarray]: (indices, scores) where indices are chunk
-                indices and scores are similarity scores.
-        """
-        q = q_emb.astype(np.float32).reshape(1, -1)
-        scores, idx = self.index.search(q, k)
-        return idx[0], scores[0]
+    def count(self) -> int:
+        return self.collection.count()
+
+
+def buildVectorDB(
+    chunks: List[Chunk],
+    embedder,
+    persist_dir: Path = PROJECT_ROOT / "chroma_db",
+    collection_name: str = "chunks",
+) -> VectorStore | None:
+    """Reuse a populated ChromaDB collection, or embed and store the chunks."""
+    if not chunks:
+        print("No chunks to index.")
+        return
+
+    store = VectorStore(persist_dir, collection_name)
+    if store.count() > 0:
+        print(f"Using existing vector store '{collection_name}'.")
+        return store
+
+    texts = [chunk.text for chunk in chunks]
+    vectors = embedder.encode(texts,batch_size=32,convert_to_numpy=True,show_progress_bar=True,normalize_embeddings=True).tolist()
+
+    store.reset()
+    store.add(
+        ids=[str(i) for i in range(len(chunks))],
+        texts=texts,
+        embeddings=vectors,
+        metadatas=[{"page": chunk.page, "chunk_id": chunk.chunk_id} for chunk in chunks],
+    )
+    print(f"Indexed {store.count()} chunks into '{collection_name}'.")
+    return store

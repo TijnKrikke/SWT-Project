@@ -15,7 +15,7 @@ from config import (
     USE_HYBRID,
     USE_RERANK,
 )
-from data_processing import Chunk, DenseIndex, bm25_tokenize
+from data_processing import Chunk, bm25_tokenize, buildVectorDB
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
 
@@ -51,15 +51,7 @@ class Retriever:
 
         self.bm25 = BM25Okapi(self.bm25_tokens)
 
-        # Dense embeddings
-        self.embeddings = self.embedder.encode(
-            self.texts,
-            batch_size=32,
-            convert_to_numpy=True,
-            show_progress_bar=True,
-            normalize_embeddings=True,
-        ).astype(np.float32)
-        self.faiss = DenseIndex(self.embeddings)
+        self.store = buildVectorDB(chunks, self.embedder)
 
     def bm25_search(self, query: str, k: int) -> List[int]:
         """BM25 search for top k chunks.
@@ -89,11 +81,13 @@ class Retriever:
             List[int]: The closes k neighbors.
         """
         qemb = self.embedder.encode(query, convert_to_numpy=True, normalize_embeddings=True).astype(np.float32)
-        idx, scores = self.faiss.search(qemb, k)
+        results = self.store.query(qemb.tolist(), k)
+        # threshold for retrieved chunks
+        scores = 1 - np.array(results["distances"][0], dtype=np.float32)
         if scores[:5].mean() < refusal_threshold:
             print(scores[:5], scores[:5].mean())
             return None
-        return idx.tolist()
+        return [int(idx) for idx in results["ids"][0]]
 
     def fuse(self, a: List[int], b: List[int]) -> List[int]:
         """Fuse two ranked lists while preserving order and removing duplicates.
@@ -156,16 +150,16 @@ class Retriever:
         use_hybrid: bool = USE_HYBRID,
         use_rerank: bool = USE_RERANK,
     ) -> List[int]:
-        """Implements the full retrieval pipeline with faiss + BM25 + Reranking.
+        """Implements the full retrieval pipeline with ChromaDB + BM25 + Reranking.
 
         Args:
             question (str): The question for which chunks need to be found.
             bm25_k (int, optional): The number of candidates to return for BM25. Defaults to BM25_CANDIDATES.
-            dense_k (int, optional): The number of candidates to return for faiss. Defaults to DENSE_CANDIDATES.
+            dense_k (int, optional): The number of candidates to return for ChromaDB. Defaults to DENSE_CANDIDATES.
             keep_stage1 (int, optional): The number of candidates to keep after the first reranker.
                 Defaults to RERANK_KEEP_STAGE1.
             final_k (int, optional): The final top-k chunks. Defaults to FINAL_CONTEXT_CHUNKS.
-            use_hybrid (bool, optional): Whether to use BM25 to retrieve chunks in combination with faiss.
+            use_hybrid (bool, optional): Whether to use BM25 to retrieve chunks in combination with ChromaDB.
                 Defaults to USE_HYBRID.
             use_rerank (bool, optional): Wether to rerank the retrieved chunks. Defaults to USE_RERANK.
 
