@@ -1,9 +1,21 @@
 [
   {
     "id": 1,
-    "story_id": "Item_40908",
+    "story_id": "Item_XXXXX",
     "question": "Question of which the answer is present in one story/chunk",
     "answer": "An answer conforming to the story, possibly as close to the original text as possible (don't rewrite the answer in weird words the LLM won't replicate)."
-  }
+  },
 
+  {
+    "id": 8,
+    "story_id": "Item_9758",
+    "question": "Wat zat er in de vermageringspillen die de vrouw probeerde?",
+    "answer": "Er zaten kleine lintwormpjes in."
+  },
+  {
+    "id": 25,
+    "story_id": "Item_15141",
+    "question": "Wat zei de punker na dat hij een pak melk leeggooide over het hoofd van de moeder?",
+    "answer": "Zo ben ik nou ook opgevoed."
+  }
 ]
