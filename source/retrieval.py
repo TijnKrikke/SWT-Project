@@ -86,7 +86,7 @@ class Retriever:
         scores = 1 - np.array(results["distances"][0], dtype=np.float32)
         if scores[:5].mean() < refusal_threshold:
             print(scores[:5], scores[:5].mean())
-            return None
+            return []
         return [int(idx) for idx in results["ids"][0]]
 
     def fuse(self, a: List[int], b: List[int]) -> List[int]:
@@ -168,20 +168,13 @@ class Retriever:
         """
 
         ds_chunks = self.dense_search(question, dense_k)
-        if not ds_chunks:
-            return None
 
         if use_hybrid:
             bm_chunks = self.bm25_search(question, bm25_k)
-            fused = self.fuse(bm_chunks, ds_chunks)
+            candidates = self.fuse(bm_chunks, ds_chunks)
+        else:
+            candidates = ds_chunks
 
         if use_rerank:
-            if not use_hybrid:
-                fused = ds_chunks
-            reranked = self.rerank(question, fused, keep_stage1=keep_stage1)
-        else:
-            if use_hybrid:
-                reranked = fused
-            else:
-                reranked = ds_chunks
-        return reranked[:final_k]
+            candidates = self.rerank(question, candidates, keep_stage1=keep_stage1)
+        return candidates[:final_k]

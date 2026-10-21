@@ -3,16 +3,10 @@ Evaluation module for system assessment.
 Computes BLEU, BERTScore, retrieval metrics, citation accuracy, and dialogue coherence.
 """
 
-import re
-
 import torch
 from config import BEAM_SIZE, MAX_NEW_TOKENS, BASELINE
 from retrieval import Retriever
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
-
-def strip_leading_enum(text: str) -> str:
-    return re.sub(r"^\s*\(?[ivxlcdm]+\)?\s*", "", text, flags=re.I)
 
 
 @torch.no_grad()
@@ -64,10 +58,9 @@ def generate_answer(
         raise ValueError("No context chunks found for the given question.")
 
     context_lines = []
-    for i, idx in enumerate(ctx_idxs, start=1):
+    for idx in ctx_idxs:
         chunk = retriever.chunks[idx]
-        clean_text = strip_leading_enum(chunk.text)
-        context_lines.append(f"[{i}] {clean_text}")
+        context_lines.append(f"[{chunk.story_id}] {chunk.title}\n{chunk.text}")
 
     context = "\n".join(context_lines)
 
@@ -96,8 +89,8 @@ def generate_answer(
     generated = outputs[0][inputs.shape[1] :]
     answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
 
-    cite_page = retriever.chunks[ctx_idxs[0]].page # probably redundant, maybe adapt, depends
-    answer += f"[{cite_page}]"
+    cite_story = retriever.chunks[ctx_idxs[0]].story_id
+    answer += f"[{cite_story}]"
 
     print("PROMPT:")
     print(question)

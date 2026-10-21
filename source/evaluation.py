@@ -13,7 +13,7 @@ from generation import generate_answer
 from retrieval import Retriever
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-_CIT_RE = re.compile(r"\[\d+\]")
+_CIT_RE = re.compile(r"\[(?:Item_)?\d+\]")
 
 
 def normalize_for_eval(ans: str) -> str:
@@ -40,7 +40,7 @@ def compute_retrieval_metrics(
 
     Args:
         ctx_idxs (List[int]): The ids of the chunks retrieved for context.
-        relevant_idxs (List[int]): The page numbers where the answer should have come from.
+        relevant_idxs (List[int]): Indices of the chunks that support the answer.
         k_values (Iterable[int]): P@K and R@K will be compute for every k in this list.
 
     Returns:
@@ -89,15 +89,15 @@ def run_evaluation(
         csv_out (str, optional): The location where the csv file will be stored. Defaults to "results.csv".
     """
     qa = load_qa_dataset(QA_DATASET_PATH)
-    page_to_chunk = {}
+    story_to_chunk = {}
     for idx, c in enumerate(retriever.chunks):
-        page_to_chunk.setdefault(c.page, []).append(idx)
+        story_to_chunk.setdefault(c.story_id, []).append(idx)
 
     all_results = []
     latencies = []
     for idx, item in enumerate(qa, start=1):
         qid = item.get("id", idx)
-        page = item.get("page")
+        story_id = item.get("story_id")
         question = item["question"]
         reference = item["answer"]
         start_ts = time.perf_counter()
@@ -111,7 +111,7 @@ def run_evaluation(
                 bleu = sacrebleu.corpus_bleu([ans_eval], [[reference]]).score
                 P, R, _ = bert_score.score([ans_eval], [reference], lang="en", model_type="bert-base-uncased", verbose=False)
                 bert = float(((P[0] + R[0]) / 2).item())
-                # Baseline does not retrieve pages
+                # Baseline does not retrieve stories
                 result = {
                     "id": qid,
                     "question": question,
@@ -129,18 +129,16 @@ def run_evaluation(
         bert = float(((P[0] + R[0]) / 2).item())
         retrieval = {}
         mrr = 0.0
-        page_hit = 0
-        src_pages = sorted({retriever.chunks[i].page for i in ctx_idxs})
+        story_hit = 0
+        src_stories = sorted({retriever.chunks[i].story_id for i in ctx_idxs})
 
-        if page is not None:
-            page_hit = int(page in src_pages)
-            if page in src_pages:
-                page_hit = 1.0
-            relevant = page_to_chunk.get(page, [])
+        if story_id is not None:
+            story_hit = int(story_id in src_stories)
+            relevant = story_to_chunk.get(story_id, [])
             retrieval, mrr = compute_retrieval_metrics(ctx_idxs, relevant, RETRIEVAL_METRIC_KS)
 
-        cited_page = retriever.chunks[ctx_idxs[0]].page
-        citation_correct = int(cited_page == page)
+        cited_story = retriever.chunks[ctx_idxs[0]].story_id
+        citation_correct = int(cited_story == story_id)
         result = {
             "id": qid,
             "question": question,
@@ -148,11 +146,11 @@ def run_evaluation(
             "answer": answer,
             "bleu": round(bleu, 3),
             "bertscore": round(bert, 4),
-            "page_hit": page_hit,
+            "story_hit": story_hit,
             "citation_correct": citation_correct,
             "mrr": round(mrr, 4),
             "latency_ms": round(latency * 1000, 2),
-            "retrieved_pages": src_pages,
+            "retrieved_story_ids": src_stories,
         }
 
         for k, (p, r) in retrieval.items():
@@ -166,7 +164,7 @@ def run_evaluation(
         summary["avg_bleu"] = float(np.mean([r["bleu"] for r in all_results]))
         summary["avg_bertscore"] = float(np.mean([r["bertscore"] for r in all_results]))
         if not BASELINE:
-            summary["page_hit_rate"] = float(np.mean([r["page_hit"] for r in all_results]))
+            summary["story_hit_rate"] = float(np.mean([r["story_hit"] for r in all_results]))
             summary["citation_accuracy"] = float(np.mean([r["citation_correct"] for r in all_results]))
             summary["mrr"] = float(np.mean([r["mrr"] for r in all_results]))
 

@@ -1,7 +1,7 @@
 [
   {
     "id": 1,
-    "page": 1,
+    "story_id": "Item_40908",
     "question": "Question of which the answer is present in one story/chunk",
     "answer": "An answer conforming to the story, possibly as close to the original text as possible (don't rewrite the answer in weird words the LLM won't replicate)."
   }

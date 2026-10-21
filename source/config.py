@@ -7,7 +7,7 @@ from pathlib import Path
 
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PDF_PATH = PROJECT_ROOT / "data" / "ed3book_aug25-pages-deleted.pdf"
+STORIES_PATH = PROJECT_ROOT / "data" / "dutch_subset.jsonl"
 QA_DATASET_PATH = PROJECT_ROOT / "resources" / "test.json"
 
 # Dense Retrieval Models
@@ -20,10 +20,6 @@ USE_STAGE2_RERANK = True  # accuracy-first (slower)
 
 # Generation Model
 GENERATION_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
-
-# Chunking (word-based with overlap)
-CHUNK_WORDS = 140
-CHUNK_OVERLAP_WORDS = 30
 
 # Base Retrieval Sizes
 BM25_CANDIDATES = 30

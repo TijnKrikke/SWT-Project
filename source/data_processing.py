@@ -1,6 +1,6 @@
 """
 Data processing module for document corpus management.
-Handles PDF loading, text cleaning, chunking, tokenization, and QA dataset loading.
+Handles story loading, chunking, tokenization, and QA dataset loading.
 """
 
 import json
@@ -15,11 +15,27 @@ from config import PROJECT_ROOT, STOPWORDS
 
 @dataclass
 class Chunk:
-    """A dataclass to store information about a single chunk."""
+    """One complete story and its identifying metadata."""
 
     text: str
-    page: int
+    story_id: str
+    title: str
     chunk_id: int
+
+
+def load_story_chunks(path: Path) -> List[Chunk]:
+    """Load the subset, keeping each entire story as one chunk."""
+    chunks = []
+    with path.open("r", encoding="utf-8") as file:
+        for chunk_id, line in enumerate(file):
+            story = json.loads(line)
+            chunks.append(Chunk(
+                text=story["text"],
+                story_id=story["story_id"],
+                title=story["title"],
+                chunk_id=chunk_id,
+            ))
+    return chunks
 
 
 def load_qa_dataset(path: Path) -> List[Dict[str, Any]]:
@@ -105,18 +121,14 @@ def buildVectorDB(
     chunks: List[Chunk],
     embedder,
     persist_dir: Path = PROJECT_ROOT / "chroma_db",
-    collection_name: str = "chunks",
+    collection_name: str = "stories",
 ) -> VectorStore | None:
-    """Reuse a populated ChromaDB collection, or embed and store the chunks."""
+    """Embed the current chunks and replace the collection with this corpus."""
     if not chunks:
         print("No chunks to index.")
         return
 
     store = VectorStore(persist_dir, collection_name)
-    if store.count() > 0:
-        print(f"Using existing vector store '{collection_name}'.")
-        return store
-
     texts = [chunk.text for chunk in chunks]
     vectors = embedder.encode(texts,batch_size=32,convert_to_numpy=True,show_progress_bar=True,normalize_embeddings=True).tolist()
 
@@ -125,7 +137,8 @@ def buildVectorDB(
         ids=[str(i) for i in range(len(chunks))],
         texts=texts,
         embeddings=vectors,
-        metadatas=[{"page": chunk.page, "chunk_id": chunk.chunk_id} for chunk in chunks],
+        metadatas=[{"story_id": chunk.story_id, "title": chunk.title, "chunk_id": chunk.chunk_id}
+                   for chunk in chunks],
     )
     print(f"Indexed {store.count()} chunks into '{collection_name}'.")
     return store
