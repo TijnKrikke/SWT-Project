@@ -7,4 +7,3 @@ TO-DO
 
 In the test.json, maybe not page but something more relevant to the project.
 Remove redundant code
-Switch to ChromaDB instead of FAISS, used it in another project, better to work with.
