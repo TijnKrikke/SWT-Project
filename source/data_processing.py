@@ -59,21 +59,6 @@ def load_qa_dataset(path: Path) -> List[Dict[str, Any]]:
     return data
 
 
-def _clean_text(string: str) -> str:
-    """Clean text by removing soft hyphens and normalizing whitespace.
-
-    Args:
-        string (str): The text that needs to be cleaned.
-
-    Returns:
-        str: The cleaned text.
-    """
-    string = (string or "").replace("\u00ad", "")
-    string = re.sub(r"\s+", " ", string).strip()
-    return string
-
-
-
 def bm25_tokenize(text: str) -> List[str]:
     """Tokenize text for BM25, removing stopwords.
 
