@@ -1,8 +1,3 @@
-"""
-Evaluation module for system assessment.
-Computes BLEU, BERTScore, retrieval metrics, citation accuracy, and dialogue coherence.
-"""
-
 import torch
 from config import BEAM_SIZE, MAX_NEW_TOKENS, BASELINE
 from retrieval import Retriever
@@ -38,16 +33,17 @@ def generate_answer(
             }
         ]
 
-        inputs = tokenizer.apply_chat_template(messages, return_tensors="pt", add_generation_prompt=True).to(device)
+        inputs = tokenizer.apply_chat_template(
+            messages, return_tensors="pt", return_dict=True, add_generation_prompt=True).to(device)
 
         outputs = model.generate(
-            inputs,
+            **inputs,
             max_new_tokens=MAX_NEW_TOKENS,
             do_sample=False,
             num_beams=BEAM_SIZE,
             pad_token_id=tokenizer.eos_token_id,
         )
-        generated = outputs[0][inputs.shape[1] :]
+        generated = outputs[0][inputs["input_ids"].shape[1] :]
         answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
         return answer, None, messages
 
@@ -76,17 +72,18 @@ def generate_answer(
         }
     ]
 
-    inputs = tokenizer.apply_chat_template(messages, return_tensors="pt", add_generation_prompt=True).to(device)
+    inputs = tokenizer.apply_chat_template(
+        messages, return_tensors="pt", return_dict=True, add_generation_prompt=True).to(device)
 
     outputs = model.generate(
-        inputs,
+        **inputs,
         max_new_tokens=MAX_NEW_TOKENS,
         do_sample=False,
         num_beams=BEAM_SIZE,
         pad_token_id=tokenizer.eos_token_id,
     )
 
-    generated = outputs[0][inputs.shape[1] :]
+    generated = outputs[0][inputs["input_ids"].shape[1] :]
     answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
 
     cite_story = retriever.chunks[ctx_idxs[0]].story_id

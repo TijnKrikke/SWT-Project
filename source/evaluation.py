@@ -5,9 +5,11 @@ from typing import Dict, Iterable, List, Tuple
 
 import bert_score
 import numpy as np
-import sacrebleu
 import torch
-from config import MEASURE_LATENCY, QA_DATASET_PATH, RETRIEVAL_METRIC_KS, BASELINE
+from config import (
+    BASELINE, BERTSCORE_MODEL, BERTSCORE_NUM_LAYERS, MEASURE_LATENCY,
+    QA_DATASET_PATH, RETRIEVAL_METRIC_KS,
+)
 from data_processing import load_qa_dataset
 from generation import generate_answer
 from retrieval import Retriever
@@ -108,23 +110,25 @@ def run_evaluation(
         if not ctx_idxs:
             if BASELINE:
                 ans_eval = normalize_for_eval(answer)
-                bleu = sacrebleu.corpus_bleu([ans_eval], [[reference]]).score
-                P, R, _ = bert_score.score([ans_eval], [reference], lang="en", model_type="bert-base-uncased", verbose=False)
+                P, R, _ = bert_score.score(
+                    [ans_eval], [reference], lang="nl", model_type=BERTSCORE_MODEL,
+                    num_layers=BERTSCORE_NUM_LAYERS, device=str(device), verbose=False)
                 bert = float(((P[0] + R[0]) / 2).item())
                 # Baseline does not retrieve stories
                 result = {
                     "id": qid,
+                    "correct_story_id": story_id,
                     "question": question,
                     "reference": reference,
                     "answer": answer,
-                    "bleu": round(bleu, 3),
                     "bertscore": round(bert, 4)}
                 all_results.append(result)
             continue
         ans_eval = normalize_for_eval(answer)
-        bleu = sacrebleu.corpus_bleu([ans_eval], [[reference]]).score
 
-        P, R, _ = bert_score.score([ans_eval], [reference], lang="en", model_type="bert-base-uncased", verbose=False)
+        P, R, _ = bert_score.score(
+            [ans_eval], [reference], lang="nl", model_type=BERTSCORE_MODEL,
+            num_layers=BERTSCORE_NUM_LAYERS, device=str(device), verbose=False)
 
         bert = float(((P[0] + R[0]) / 2).item())
         retrieval = {}
@@ -141,10 +145,10 @@ def run_evaluation(
         citation_correct = int(cited_story == story_id)
         result = {
             "id": qid,
+            "correct_story_id": story_id,
             "question": question,
             "reference": reference,
             "answer": answer,
-            "bleu": round(bleu, 3),
             "bertscore": round(bert, 4),
             "story_hit": story_hit,
             "citation_correct": citation_correct,
@@ -161,7 +165,6 @@ def run_evaluation(
     summary = {}
 
     if all_results:
-        summary["avg_bleu"] = float(np.mean([r["bleu"] for r in all_results]))
         summary["avg_bertscore"] = float(np.mean([r["bertscore"] for r in all_results]))
         if not BASELINE:
             summary["story_hit_rate"] = float(np.mean([r["story_hit"] for r in all_results]))
