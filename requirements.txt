@@ -1,7 +1,8 @@
 # Requires Python 3.11
 numpy
 sentence-transformers
-transformers==4.57.3
+transformers
+accelerate
 bert-score
 chromadb
 torch
