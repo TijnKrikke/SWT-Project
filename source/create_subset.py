@@ -79,13 +79,29 @@ for path in sorted(DATA_DIR.glob("20231201_verhalenbank_*.json")):
         if not MIN_WORDS <= word_count <= MAX_WORDS:
             continue
 
+
+        if document["word_count"] is None:
+            word_count = len(re.findall(r"\b\w+(?:['\u2019-]\w+)*\b", text))
+        
+        doc_date = document.get("date", None)
+
+        doc_type = document.get("type", None)
+        
+        doc_tag = document.get("tag", [])
+        
+        doc_description = document.get("description", None)
+
         stories.append({
             "story_id": document["id"],
             "title": title,
             "text": text,
             "language": languages,
             "subgenre": [genre.strip() for genre in document.get("subgenre", []) if genre.strip()],
-            "word_count": word_count,
+            "word_count": document["word_count"],
+            "date": doc_date,
+            "type": doc_type,
+            "tags": doc_tag,
+            "description": doc_description,
         })
 
 # Remove duplicate texts, keeping the first story by ID.

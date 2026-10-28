@@ -12,16 +12,16 @@ MODEL = "Qwen3.5:9b" # LLM to use for question-answering
 VB = Namespace("verhalenbank/") # namespace for the Verhalenbank
 
 
-def read_json_files(files: list[str]) -> list[dict]:
+def read_json_files(filename: str) -> list[dict]:
     """Reads data from a set of JSON files and returns a list of dictionaries"""
 
     data = []
     
-    for file in files:
-        with open(file, "r", encoding="utf-8") as f: # encoding is important with this dataset
-            current_data = json.load(f)["response"]["docs"]
-            data.extend(current_data)
-    
+    with open(filename, "r", encoding="utf-8") as f:
+        data = [json.loads(line) for line in f]
+
+    print(f"Loaded {len(data)} stories from {filename}")
+
     return data
 
 def create_rdf_graph(data: list[dict]) -> Graph:
@@ -32,26 +32,23 @@ def create_rdf_graph(data: list[dict]) -> Graph:
 
     # create namespace for the Verhalenbank
     graph.bind("vb", VB)
-    
-    # select predicates that are likely to be useful for question-answering
-    wanted_predicates = ["_version_", "address", "collection", "collector", "continent", "contributor", "corpus", "country", "creator", "date", "date_end", "date_start", "decennium_group", "description", "establishment", "featured", "identifier", "itemtype", "language", "locality", "main_text", "map_type", "model", "motif", "named_entity", "natural_feature", "owner_id", "place_of_action", "source", "subgenre", "subject", "tag", "title", "type", "word_count", "word_count_group"]
-    
+        
     # add data to graph
     for row in data:
-        subject = VB[str(row['id'])]
+        subject = VB[str(row['story_id'])]
         for key, value in row.items():
-            if key != "id":
+            if key != "story_id":
                 predicate = VB[key]
-                if key in wanted_predicates:
-                    if isinstance(value, list): # split list into multiple literals
-                        for item in value:
-                            graph.add((subject, predicate, Literal(item)))
-                    else:
-                        graph.add((subject, predicate, Literal(value)))
+                if isinstance(value, list): # split list into multiple literals
+                    for item in value:
+                        graph.add((subject, predicate, Literal(item)))
+                else:
+                    graph.add((subject, predicate, Literal(value)))
     return graph
 
 def sparql_query(query: str, graph: Graph) -> str | list:
     """helper function to execute a SPARQL query and return the results"""
+    print(query)
     try:
         result = graph.query(query)
         results = [tuple(str(value) for value in row) for row in result]
@@ -72,13 +69,7 @@ def create_tools() -> list:
         ( "Execute a SPARQL SELECT query against the Verhalenbank RDF graph and return matching rows. "
             "Subjects are Item URIs like vb:Item_8600. "
             "Always use PREFIX vb: <verhalenbank/> and prefix every predicate with vb: "
-            "(e.g. vb:tag, vb:word_count, vb:main_text, vb:title, vb:description, vb:collector, "
-            "vb:motif, vb:subgenre, vb:subject, vb:language, vb:date). "
-            "Valid predicates include: _version_, address, collection, collector, continent, contributor, "
-            "corpus, country, creator, date, date_end, date_start, decennium_group, description, "
-            "establishment, featured, identifier, itemtype, language, locality, main_text, map_type, "
-            "model, motif, named_entity, natural_feature, owner_id, place_of_action, source, subgenre, "
-            "subject, tag, title, type, word_count, word_count_group. "
+            "Predicates: vb:tag, vb:word_count, vb:text, vb:title, vb:description, vb:type, vb:language, vb:date, vb:subgenre, vb:tags "
             "Graph patterns use a single pair of braces { ... }; separate triples with '.'; "
             "Never use && inside WHERE, never use double braces {{ }}, never omit the vb: prefix on predicates. "
             "String literals should use double quotes. Tag/text values are Dutch "
@@ -90,7 +81,7 @@ def create_tools() -> list:
             "PREFIX vb: <verhalenbank/>\n"
             "SELECT ?wc WHERE { vb:Item_8600 vb:word_count ?wc }\n"
             "PREFIX vb: <verhalenbank/>\n"
-            "SELECT ?s ?text WHERE { ?s vb:tag \"kabouter\" . ?s vb:main_text ?text } LIMIT 5\n"
+            "SELECT ?s ?text WHERE { ?s vb:tag \"kabouter\" . ?s vb:text ?text } LIMIT 5\n"
             "PREFIX vb: <verhalenbank/>\n"
             "SELECT ?p ?o WHERE { vb:Item_8600 ?p ?o }"),
         "parameters": {
@@ -152,8 +143,8 @@ def ask_agent(question: str, max_tries: int, graph: Graph, tools: list) -> str:
 def main() -> None:
     # load data from JSON files
     print("Loading data from JSON files...")
-    files = ["vvb/20231201_verhalenbank_0.json", "vvb/20231201_verhalenbank_1.json", "vvb/20231201_verhalenbank_2.json", "vvb/20231201_verhalenbank_3.json", "vvb/20231201_verhalenbank_4.json", "vvb/20231201_verhalenbank_5.json"]
-    data = read_json_files(files)
+    filename = "../data/dutch_subset.jsonl"
+    data = read_json_files(filename)
     
     # create RDF graph
     print("Creating RDF graph...")
