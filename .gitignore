@@ -222,3 +222,5 @@ __marimo__/
 data/
 
 chroma_db/
+
+results.csv
