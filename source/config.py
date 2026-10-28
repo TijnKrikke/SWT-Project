@@ -19,7 +19,7 @@ RERANK_STAGE2_MODEL = "cross-encoder/ms-marco-electra-base"
 USE_STAGE2_RERANK = True  # accuracy-first (slower)
 
 # Generation Model
-GENERATION_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
+GENERATION_MODEL = "google/gemma-4-12B-it"
 
 # Base Retrieval Sizes
 BM25_CANDIDATES = 30
@@ -33,8 +33,8 @@ USE_RERANK = True
 REFUSAL_THRESHOLD = 0.4
 
 # Generation Settings
-BEAM_SIZE = 1
-MAX_NEW_TOKENS = 64
+BEAM_SIZE = 5
+MAX_NEW_TOKENS = 128
 
 # Evaluation Metrics
 BERTSCORE_MODEL = "bert-base-uncased"
@@ -49,10 +49,18 @@ BASELINE = False  # Generate answer with LLM only
 
 # Deterministic Stopwords (BM25)
 STOPWORDS = {
-    "the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with",
-    "is", "are", "was", "were", "be", "been", "being", "as", "by", "at",
-    "from", "that", "this", "these", "those", "it", "its", "into", "than",
-    "then", "but", "if", "so", "such", "their", "there", "here", "what",
-    "why", "how", "when", "which", "who", "whom", "does", "do", "did",
-    "can", "could", "should", "would", "may", "might", "will", "just",
+    "de", "het", "een", "en", "of", "te", "naar", "aan", "tot",
+    "van", "in", "op", "voor", "met",
+    "is", "zijn", "was", "waren", "wezen", "geweest", "zijnde",
+    "als", "zoals", "door", "bij",
+    "uit", "vanaf", "dat", "die", "dit", "deze", "het",
+    "hij", "zij", "zijn", "haar", "binnen", "dan",
+    "toen", "vervolgens", "maar", "indien", "dus", "zo",
+    "zulk", "zulke", "hun", "daar", "er", "hier", "wat",
+    "waarom", "hoe", "wanneer", "welke", "welk", "wie",
+    "doet", "doen", "deed",
+    "kan", "kunnen", "kon", "konden",
+    "moet", "moeten", "zou", "zouden",
+    "mag", "mogen", "misschien", "wellicht",
+    "zal", "zullen", "slechts", "net", "pas", "gewoon",
 }
