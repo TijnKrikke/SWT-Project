@@ -2,7 +2,7 @@
 numpy
 sentence-transformers
 transformers
-accelerate
+ollama
 bert-score
 chromadb
 torch

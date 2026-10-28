@@ -1,25 +1,29 @@
-import torch
-from config import BEAM_SIZE, MAX_NEW_TOKENS, BASELINE
+from ollama import chat
+
+from config import BASELINE, GENERATION_MODEL, MAX_NEW_TOKENS
 from retrieval import Retriever
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-@torch.no_grad()
+def _generate(messages: list[dict]) -> str:
+    response = chat(
+        model=GENERATION_MODEL,
+        messages=messages,
+        stream=False,
+        think=False,
+        options={"num_predict": MAX_NEW_TOKENS, "temperature": 0},
+    )
+    return response["message"]["content"].strip()
+
+
 def generate_answer(
     question: str,
     retriever: Retriever,
-    tokenizer: AutoTokenizer,
-    model: AutoModelForCausalLM,
-    device: torch.device,
-) -> tuple[str, list[int], list[dict]]:
+) -> tuple[str, list[int] | None, list[dict]]:
     """The model that generates the final output with or without conversational context.
 
     Args:
         question (str): The user's question.
         retriever (Retriever): The retriever used to retrieve chunks.
-        tokenizer (AutoTokenizer): The tokenizer used to tokenize the chunks for the model.
-        model (AutoModelForCausalLM): The model used to generate the answers.
-        device (torch.device): The device on which the model is stored.
 
     Returns:
         tuple[str, list[int], list[dict]]: The generated answer, the used context chunk ids,
@@ -33,18 +37,7 @@ def generate_answer(
             }
         ]
 
-        inputs = tokenizer.apply_chat_template(
-            messages, return_tensors="pt", return_dict=True, add_generation_prompt=True).to(device)
-
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=MAX_NEW_TOKENS,
-            do_sample=False,
-            num_beams=BEAM_SIZE,
-            pad_token_id=tokenizer.eos_token_id,
-        )
-        generated = outputs[0][inputs["input_ids"].shape[1] :]
-        answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
+        answer = _generate(messages)
         return answer, None, messages
 
     # with RAG
@@ -79,19 +72,7 @@ def generate_answer(
         }
     ]
 
-    inputs = tokenizer.apply_chat_template(
-        messages, return_tensors="pt", return_dict=True, add_generation_prompt=True).to(device)
-
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=MAX_NEW_TOKENS,
-        do_sample=False,
-        num_beams=BEAM_SIZE,
-        pad_token_id=tokenizer.eos_token_id,
-    )
-
-    generated = outputs[0][inputs["input_ids"].shape[1] :]
-    answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
+    answer = _generate(messages)
 
     cite_story = retriever.chunks[ctx_idxs[0]].story_id
     answer += f"[{cite_story}]"
