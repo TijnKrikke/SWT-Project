@@ -1,16 +1,21 @@
 [
   {
-    "id": 1,
-    "story_id": "Item_XXXXX",
-    "question": "Question of which the answer is present in one story/chunk",
-    "answer": "An answer conforming to the story, possibly as close to the original text as possible (don't rewrite the answer in weird words the LLM won't replicate)."
-  },
-
-  {
     "id": 8,
     "story_id": "Item_9758",
     "question": "Wat zat er in de vermageringspillen die de vrouw probeerde?",
     "answer": "Er zaten kleine lintwormpjes in."
+  },
+  {
+    "id": 13,
+    "story_id": "Item_57836",
+    "question": "Waarom viel het kooltje vuur in het water?",
+    "answer": "Hij liep over het strootje, die in de brand raakte."
+  },
+  {
+    "id": 16,
+    "story_id": "Item_126030",
+    "question": "Wie droeg altijd een rood mutsje en een rode cape?",
+    "answer": "Roodkapje"
   },
   {
     "id": 25,
@@ -77,5 +82,41 @@
     "story_id": "Item_19807",
     "question": "Wat gaat de wolf in Terneuzen parten spelen?",
     "answer": "Dit roodkapjessyndroom."
+  },
+  {
+    "id": 39,
+    "story_id": "Item_49595",
+    "question": "Hoe noemde de boer zijn molen die deels door de duivel was gebouwd?",
+    "answer": "Het Geluk"
+  },
+  {
+    "id": 59,
+    "story_id": "Item_49836",
+    "question": "Wat gebeurde er met de boer die kabouters bespioneerde?",
+    "answer": "Hij was voor zijn verdere leven blind."
+  },
+  {
+    "id": 66,
+    "story_id": "Item_14986",
+    "question": "Waarom stribbelde het meisje tegen toen de jongen aan het serieuzere werk wilde beginnen??",
+    "answer": "Ze was bang voor de maniak met een haak in plaats van een hand, die auto's met vrijende paartjes besluipt."
+  },
+  {
+    "id": 89,
+    "story_id": "Item_29859",
+    "question": "Waar komt Bill gates Petrus tegen?",
+    "answer": "Bij de hemelpoort."
+  },
+  {
+    "id": 90,
+    "story_id": "Item_41070",
+    "question": "Waarom zag niemand Kobus toen hij op de kar de stadspoort uit reed?",
+    "answer": "Hij had zich in een meelzak veranderd."
+  },
+  {
+    "id": 95,
+    "story_id": "Item_15011",
+    "question": "Waarom viel zijn valse gebit in zee?",
+    "answer": "Het was slecht weer en hij braakte zijn lunch uit in het water."
   }
 ]
