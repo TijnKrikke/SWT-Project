@@ -7,7 +7,7 @@
 import json
 from rdflib import Graph, Namespace, Literal
 from ollama import chat
-from config import GENERATION_MODEL
+from config import GENERATION_MODEL, STORIES_PATH
 
 MODEL = GENERATION_MODEL # LLM to use for question-answering
 VB = Namespace("verhalenbank/") # namespace for the Verhalenbank
@@ -144,7 +144,7 @@ def ask_agent(question: str, max_tries: int, graph: Graph, tools: list) -> str:
 def main() -> None:
     # load data from JSON files
     print("Loading data from JSON files...")
-    filename = "../data/dutch_subset.jsonl"
+    filename = str(STORIES_PATH)
     data = read_json_files(filename)
     
     # create RDF graph
