@@ -33,8 +33,8 @@ def normalize_for_eval(ans: str) -> str:
 
 
 def compute_retrieval_metrics(
-    ctx_idxs: List[int],
-    relevant_idxs: List[int],
+    ctx_idxs: List[int | str],
+    relevant_idxs: List[int | str],
     k_values: Iterable[int],
 ) -> Tuple[Dict[int, Tuple[float, float]], float]:
     """Compute P@K, R@K, MRR.
@@ -103,14 +103,15 @@ def run_evaluation(
         if rdf_graph is not None:
             from RDF_Agent import ask_agent
 
-            answer, ctx_idxs = ask_agent(question, 5, rdf_graph, rdf_tools), None
+            ctx_idxs = []
+            answer = ask_agent(question, 5, rdf_graph, rdf_tools, retrieved_ids=ctx_idxs)
         else:
             answer, ctx_idxs, _ = generate_answer(question, retriever)
         latency = time.perf_counter() - start_ts
         if MEASURE_LATENCY:
             latencies.append(latency)
-        if not ctx_idxs:
-            if BASELINE or rdf_graph is not None:
+        if not ctx_idxs and rdf_graph is None:
+            if BASELINE:
                 ans_eval = normalize_for_eval(answer)
                 P, R, _ = bert_score.score(
                     [ans_eval], [reference], lang="nl", model_type=BERTSCORE_MODEL,
@@ -136,15 +137,13 @@ def run_evaluation(
         retrieval = {}
         mrr = 0.0
         story_hit = 0
-        src_stories = sorted({retriever.chunks[i].story_id for i in ctx_idxs})
+        src_stories = ctx_idxs if rdf_graph is not None else sorted({retriever.chunks[i].story_id for i in ctx_idxs})
 
         if story_id is not None:
             story_hit = int(story_id in src_stories)
-            relevant = story_to_chunk.get(story_id, [])
+            relevant = [story_id] if rdf_graph is not None else story_to_chunk.get(story_id, [])
             retrieval, mrr = compute_retrieval_metrics(ctx_idxs, relevant, RETRIEVAL_METRIC_KS)
 
-        cited_story = retriever.chunks[ctx_idxs[0]].story_id
-        citation_correct = int(cited_story == story_id)
         result = {
             "id": qid,
             "correct_story_id": story_id,
@@ -153,11 +152,12 @@ def run_evaluation(
             "answer": answer,
             "bertscore": round(bert, 4),
             "story_hit": story_hit,
-            "citation_correct": citation_correct,
             "mrr": round(mrr, 4),
             "latency_ms": round(latency * 1000, 2),
             "retrieved_story_ids": src_stories,
         }
+        if rdf_graph is None:
+            result["citation_correct"] = int(retriever.chunks[ctx_idxs[0]].story_id == story_id)
 
         for k, (p, r) in retrieval.items():
             result[f"P@{k}"] = round(p, 4)
@@ -168,9 +168,10 @@ def run_evaluation(
 
     if all_results:
         summary["avg_bertscore"] = float(np.mean([r["bertscore"] for r in all_results]))
-        if not BASELINE and rdf_graph is None:
+        if not BASELINE or rdf_graph is not None:
             summary["story_hit_rate"] = float(np.mean([r["story_hit"] for r in all_results]))
-            summary["citation_accuracy"] = float(np.mean([r["citation_correct"] for r in all_results]))
+            if rdf_graph is None:
+                summary["citation_accuracy"] = float(np.mean([r["citation_correct"] for r in all_results]))
             summary["mrr"] = float(np.mean([r["mrr"] for r in all_results]))
 
             for k in RETRIEVAL_METRIC_KS:
