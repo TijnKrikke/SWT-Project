@@ -5,7 +5,7 @@ Handles story loading, chunking, tokenization, and QA dataset loading.
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -21,6 +21,7 @@ class Chunk:
     story_id: str
     title: str
     chunk_id: int
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 def load_story_chunks(path: Path) -> List[Chunk]:
@@ -29,11 +30,16 @@ def load_story_chunks(path: Path) -> List[Chunk]:
     with path.open("r", encoding="utf-8") as file:
         for chunk_id, line in enumerate(file):
             story = json.loads(line)
+            metadata = {
+                k: v for k, v in story.items()
+                if k not in {"text", "story_id", "title"}
+            }
             chunks.append(Chunk(
                 text=story["text"],
                 story_id=story["story_id"],
                 title=story["title"],
                 chunk_id=chunk_id,
+                metadata=metadata,
             ))
     return chunks
 
@@ -114,16 +120,34 @@ def buildVectorDB(
         return
 
     store = VectorStore(persist_dir, collection_name)
+    if store.count() == len(chunks):
+        print(f"Collection '{collection_name}' already indexed with {store.count()} chunks. Skipping embedding.")
+        return store
+
     texts = [chunk.text for chunk in chunks]
     vectors = embedder.encode(texts,batch_size=32,convert_to_numpy=True,show_progress_bar=True,normalize_embeddings=True).tolist()
 
     store.reset()
+
+    chroma_metadatas = []
+    for chunk in chunks:
+        meta = {
+            "story_id": chunk.story_id,
+            "title": chunk.title,
+            "chunk_id": chunk.chunk_id,
+        }
+        for k, v in chunk.metadata.items():
+            if isinstance(v, list):
+                meta[k] = ", ".join(str(x) for x in v)
+            elif isinstance(v, (str, int, float, bool)):
+                meta[k] = v
+        chroma_metadatas.append(meta)
+
     store.add(
         ids=[str(i) for i in range(len(chunks))],
         texts=texts,
         embeddings=vectors,
-        metadatas=[{"story_id": chunk.story_id, "title": chunk.title, "chunk_id": chunk.chunk_id}
-                   for chunk in chunks],
+        metadatas=chroma_metadatas,
     )
     print(f"Indexed {store.count()} chunks into '{collection_name}'.")
     return store

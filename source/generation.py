@@ -56,9 +56,16 @@ def generate_answer(
     context_lines = []
     for idx in ctx_idxs:
         chunk = retriever.chunks[idx]
-        context_lines.append(f"[{chunk.story_id}] {chunk.title}\n{chunk.text}")
+        meta_parts = []
+        if chunk.metadata:
+            for k, v in chunk.metadata.items():
+                val = ", ".join(str(x) for x in v) if isinstance(v, list) else str(v)
+                if val:
+                    meta_parts.append(f"{k.replace('_', ' ').capitalize()}: {val}")
+        meta_str = f"Metadata: {' | '.join(meta_parts)}\n" if meta_parts else ""
+        context_lines.append(f"[{chunk.story_id}] {chunk.title}\n{meta_str}{chunk.text}")
 
-    context = "\n".join(context_lines)
+    context = "\n\n".join(context_lines)
 
     # maybe make this in Dutch later (content)
     messages = [
