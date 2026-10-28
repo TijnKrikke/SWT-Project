@@ -50,7 +50,7 @@ def create_rdf_graph(data: list[dict]) -> Graph:
                         graph.add((subject, predicate, Literal(value)))
     return graph
 
-def sparql_query(query, graph):
+def sparql_query(query: str, graph: Graph) -> str | list:
     """helper function to execute a SPARQL query and return the results"""
     try:
         result = graph.query(query)
@@ -61,7 +61,7 @@ def sparql_query(query, graph):
     except Exception as e:
         return f"SPARQL Error: {e}"
 
-def create_tools():
+def create_tools() -> list:
     """creates list of tools for the LLM, with the SPARQL query tool and its description"""
 
     tools = [{
@@ -109,7 +109,7 @@ def create_tools():
 
     return tools
 
-def ask_agent(question, max_tries, graph, tools):
+def ask_agent(question: str, max_tries: int, graph: Graph, tools: list) -> str:
     """helper function to ask a question to the agent and handle the tool calls"""
     
     SYSTEM_PROMPT = """
@@ -149,7 +149,7 @@ def ask_agent(question, max_tries, graph, tools):
     
     return "Ran out of tries, no answer found.." # if no answer is found, return a message
 
-def main():
+def main() -> None:
     # load data from JSON files
     print("Loading data from JSON files...")
     files = ["vvb/20231201_verhalenbank_0.json", "vvb/20231201_verhalenbank_1.json", "vvb/20231201_verhalenbank_2.json", "vvb/20231201_verhalenbank_3.json", "vvb/20231201_verhalenbank_4.json", "vvb/20231201_verhalenbank_5.json"]
