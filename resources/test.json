@@ -1,21 +1,82 @@
 [
+  
   {
-    "id": 8,
+    "id": 4,
     "story_id": "Item_9758",
     "question": "Wat zat er in de vermageringspillen die de vrouw probeerde?",
     "answer": "Er zaten kleine lintwormpjes in."
   },
   {
-    "id": 13,
+    "id": 5,
     "story_id": "Item_57836",
     "question": "Waarom viel het kooltje vuur in het water?",
     "answer": "Hij liep over het strootje, die in de brand raakte."
   },
   {
-    "id": 16,
+    "id": 6,
     "story_id": "Item_126030",
     "question": "Wie droeg altijd een rood mutsje en een rode cape?",
     "answer": "Roodkapje"
+  },
+  {
+    "id": 11,
+    "story_id": "Item_46871",
+    "question": "Uit welk jaar komt De Jutters van Schouwen?",
+    "answer": "1934"
+  },
+  {
+    "id": 12,
+    "story_id": "Item_9757",
+    "question": "Welk subgenre is Het wandelende dekbed?",
+    "answer": "Broodjeaapverhaal"
+  },
+  {
+    "id": 13,
+    "story_id": "Item_42014",
+    "question": "Hoeveel woorden heeft Het paard van Leiden?",
+    "answer": "2071"
+  },
+  {
+    "id": 14,
+    "story_id": "Item_42030",
+    "question": "Uit welke collectie komt De vreemde gast?",
+    "answer": "Nederlandse Volksverhalen"
+  },
+  {
+    "id": 15,
+    "story_id": "Item_42057",
+    "question": "Is de De Sabbath-schender een legende?",
+    "answer": "Ja"
+  },
+  {
+    "id": 16,
+    "story_id": "Item_42087",
+    "question": "Wat zijn de trefwoorden van De wilde jacht op de Osselker Esch?",
+    "answer": "eeuwig, hond, hoorn, jacht, jagen, jager, paard, spokerij, wild"
+  },
+  {
+    "id": 17,
+    "story_id": "Item_42090",
+    "question": "In welke taal is De lachende pastoor geschreven?",
+    "answer": "Standaardnederlands"
+  },
+  {
+    "id": 18,
+    "story_id": "Item_42089",
+    "question": "Geef me de beschrijving van het verhaal: 'Een onzichtbaar paard'",
+    "answer": "Op de plek waar een man met een vriend aan het vissen was, kwam een afgedwaald paard van de wilde jacht voorbij. Het paard plonsde in het water en ploeterde daar zonder dat de vissers iets zagen. Die pakten hun spullen en verdwenen van de plek. Sommigen zeggen dat ze het geluk niet hebben gekend, omdat ze de wilde jacht zagen."
+  },
+  {
+    "id": 19,
+    "story_id": "Item_42086",
+    "question": "Heeft De duivelsgracht van Gorinchem meer dan 200 woorden?",
+    "answer": "Ja"
+  },
+  {
+    "id": 20,
+    "story_id": "Item_10666",
+    "question": "Uit welke provincie komt het sprookjes 'Negende vertelling'",
+    "answer": "Groningen"
   },
   {
     "id": 25,
