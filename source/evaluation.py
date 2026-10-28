@@ -182,3 +182,5 @@ def run_evaluation(
             writer = csv.DictWriter(f, fieldnames=keys)
             writer.writeheader()
             writer.writerows(all_results)
+
+        print(summary)
