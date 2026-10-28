@@ -17,7 +17,7 @@ from data_processing import load_story_chunks
 from evaluation import run_evaluation
 from retrieval import Retriever
 from sentence_transformers import CrossEncoder, SentenceTransformer
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForMultimodalLM, AutoTokenizer
 
 
 def main():
@@ -46,7 +46,9 @@ def main():
 
     # Load tokenizer and generation model
     tokenizer = AutoTokenizer.from_pretrained(GENERATION_MODEL)
-    gen_model = AutoModelForCausalLM.from_pretrained(GENERATION_MODEL).to(device)
+    gen_model = AutoModelForMultimodalLM.from_pretrained(
+        GENERATION_MODEL, dtype="auto"
+    ).to(device)
     gen_model.eval()
 
     print("\nRunning evaluation mode")
