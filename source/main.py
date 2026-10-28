@@ -10,6 +10,7 @@ from config import (
     RERANK_STAGE1_MODEL,
     RERANK_STAGE2_MODEL,
     STORIES_PATH,
+    USE_RDF_AGENT,
     USE_STAGE2_RERANK,
 )
 from data_processing import load_story_chunks
@@ -21,11 +22,18 @@ from sentence_transformers import CrossEncoder, SentenceTransformer
 def main():
     """Initialize system and run evaluation or interactive mode."""
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if USE_RDF_AGENT:
+        from RDF_Agent import create_rdf_graph, create_tools, read_json_files
+
+        graph = create_rdf_graph(read_json_files(str(STORIES_PATH)))
+        run_evaluation(None, device, csv_out="rdf_results.csv", rdf_graph=graph, rdf_tools=create_tools())
+        return
+
     chunks = load_story_chunks(STORIES_PATH)
     print(f"Loaded {len(chunks)} stories as {len(chunks)} chunks.")
 
     print("Loading models")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
     # Load embedding and reranking models

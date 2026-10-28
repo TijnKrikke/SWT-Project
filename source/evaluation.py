@@ -74,9 +74,11 @@ def compute_retrieval_metrics(
 
 
 def run_evaluation(
-    retriever: Retriever,
+    retriever: Retriever | None,
     device: torch.device,
     csv_out: str = "results.csv",
+    rdf_graph=None,
+    rdf_tools=None,
 ) -> None:
     """Evaluate the current model using the QA dataset. Compute and store the metrics in CSV.
 
@@ -87,7 +89,7 @@ def run_evaluation(
     """
     qa = load_qa_dataset(QA_DATASET_PATH)
     story_to_chunk = {}
-    for idx, c in enumerate(retriever.chunks):
+    for idx, c in enumerate(retriever.chunks if retriever else []):
         story_to_chunk.setdefault(c.story_id, []).append(idx)
 
     all_results = []
@@ -98,12 +100,17 @@ def run_evaluation(
         question = item["question"]
         reference = item["answer"]
         start_ts = time.perf_counter()
-        answer, ctx_idxs, _ = generate_answer(question, retriever)
+        if rdf_graph is not None:
+            from RDF_Agent import ask_agent
+
+            answer, ctx_idxs = ask_agent(question, 5, rdf_graph, rdf_tools), None
+        else:
+            answer, ctx_idxs, _ = generate_answer(question, retriever)
         latency = time.perf_counter() - start_ts
         if MEASURE_LATENCY:
             latencies.append(latency)
         if not ctx_idxs:
-            if BASELINE:
+            if BASELINE or rdf_graph is not None:
                 ans_eval = normalize_for_eval(answer)
                 P, R, _ = bert_score.score(
                     [ans_eval], [reference], lang="nl", model_type=BERTSCORE_MODEL,
@@ -161,7 +168,7 @@ def run_evaluation(
 
     if all_results:
         summary["avg_bertscore"] = float(np.mean([r["bertscore"] for r in all_results]))
-        if not BASELINE:
+        if not BASELINE and rdf_graph is None:
             summary["story_hit_rate"] = float(np.mean([r["story_hit"] for r in all_results]))
             summary["citation_accuracy"] = float(np.mean([r["citation_correct"] for r in all_results]))
             summary["mrr"] = float(np.mean([r["mrr"] for r in all_results]))

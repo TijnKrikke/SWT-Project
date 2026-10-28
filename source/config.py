@@ -43,6 +43,7 @@ RETRIEVAL_METRIC_KS = (1, 3, 5, 10)
 MEASURE_LATENCY = True
 
 # Run Mode
+USE_RDF_AGENT = True  # False: use the existing RAG pipeline
 RUN_EVALUATION = True  # True: evaluate on QA_DATASET_PATH; False: interactive
 BASELINE = False  # Generate answer with LLM only
 
