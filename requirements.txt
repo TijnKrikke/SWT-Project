@@ -7,3 +7,4 @@ bert-score
 chromadb
 torch
 rank-bm25
+rdflib

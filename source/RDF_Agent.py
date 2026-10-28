@@ -7,8 +7,9 @@
 import json
 from rdflib import Graph, Namespace, Literal
 from ollama import chat
+from config import GENERATION_MODEL
 
-MODEL = "Qwen3.5:9b" # LLM to use for question-answering
+MODEL = GENERATION_MODEL # LLM to use for question-answering
 VB = Namespace("verhalenbank/") # namespace for the Verhalenbank
 
 
