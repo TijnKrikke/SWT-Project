@@ -19,7 +19,7 @@ RERANK_STAGE2_MODEL = "cross-encoder/ms-marco-electra-base"
 USE_STAGE2_RERANK = True  # accuracy-first (slower)
 
 # Generation Model
-GENERATION_MODEL = "google/gemma-4-12B-it"
+GENERATION_MODEL = "gemma4:12b"
 
 # Base Retrieval Sizes
 BM25_CANDIDATES = 30
@@ -33,7 +33,6 @@ USE_RERANK = True
 REFUSAL_THRESHOLD = 0.4
 
 # Generation Settings
-BEAM_SIZE = 5
 MAX_NEW_TOKENS = 128
 
 # Evaluation Metrics

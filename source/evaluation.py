@@ -13,7 +13,6 @@ from config import (
 from data_processing import load_qa_dataset
 from generation import generate_answer
 from retrieval import Retriever
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 _CIT_RE = re.compile(r"\[(?:Item_)?\d+\]")
 
@@ -76,8 +75,6 @@ def compute_retrieval_metrics(
 
 def run_evaluation(
     retriever: Retriever,
-    tokenizer: AutoTokenizer,
-    model: AutoModelForCausalLM,
     device: torch.device,
     csv_out: str = "results.csv",
 ) -> None:
@@ -85,9 +82,7 @@ def run_evaluation(
 
     Args:
         retriever (Retriever): The retriever used to retrieve chunks.
-        tokenizer (AutoTokenize): The tokenizer to tokenize chunks for the model.
-        model (AutoModelForCausalLM): The model used to generate output.
-        device (torch.Device): The device used for the model.
+        device (torch.Device): The device used for BERTScore.
         csv_out (str, optional): The location where the csv file will be stored. Defaults to "results.csv".
     """
     qa = load_qa_dataset(QA_DATASET_PATH)
@@ -103,7 +98,7 @@ def run_evaluation(
         question = item["question"]
         reference = item["answer"]
         start_ts = time.perf_counter()
-        answer, ctx_idxs, _ = generate_answer(question, retriever, tokenizer, model, device)
+        answer, ctx_idxs, _ = generate_answer(question, retriever)
         latency = time.perf_counter() - start_ts
         if MEASURE_LATENCY:
             latencies.append(latency)

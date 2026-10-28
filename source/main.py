@@ -7,7 +7,6 @@ Loads all models, initializes the retriever, and orchestrates either evaluation 
 import torch
 from config import (
     EMBEDDING_MODEL,
-    GENERATION_MODEL,
     RERANK_STAGE1_MODEL,
     RERANK_STAGE2_MODEL,
     STORIES_PATH,
@@ -17,7 +16,6 @@ from data_processing import load_story_chunks
 from evaluation import run_evaluation
 from retrieval import Retriever
 from sentence_transformers import CrossEncoder, SentenceTransformer
-from transformers import AutoModelForMultimodalLM, AutoTokenizer
 
 
 def main():
@@ -44,15 +42,8 @@ def main():
         reranker_stage2=rer2,
     )
 
-    # Load tokenizer and generation model
-    tokenizer = AutoTokenizer.from_pretrained(GENERATION_MODEL)
-    gen_model = AutoModelForMultimodalLM.from_pretrained(
-        GENERATION_MODEL, dtype="auto"
-    ).to(device)
-    gen_model.eval()
-
     print("\nRunning evaluation mode")
-    run_evaluation(retriever, tokenizer, gen_model, device)
+    run_evaluation(retriever, device)
 
 
 if __name__ == "__main__":
